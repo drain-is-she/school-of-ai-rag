@@ -1,0 +1,101 @@
+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
+
+
+
+
+
+
+import streamlit as st
+import requests
+import json
+import os 
+import sys 
+
+# --- 1. SET UP API KEY SECURELY (REMAINS CORRECT) ---
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+except KeyError:
+    API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if not API_KEY:
+    st.error(
+        "**API Key not found.**\n\n"
+        "Please set 'GEMINI_API_KEY' securely either in:\n"
+        "1. **`.streamlit/secrets.toml`** file\n"
+        "2. **Environment variable**"
+    )
+    st.stop()
+
+# Configuration
+MODEL = "gemini-2.5-flash" 
+
+# --- SYSTEM INSTRUCTION (CORE PERSONALIZATION) ---
+# NOTE: This is now a regular string variable that will be prepended to the user's prompt.
+SYSTEM_INSTRUCTION = (
+    "You are an expert AI Assistant for the Bennett University School of AI. "
+    "Your tone must be highly academic, supportive, and focused on innovation, research, and application. "
+    "When answering questions, especially about applications, connect the concepts to the School's "
+    "key specialization areas (AgriTech, Digital Healthcare, FinTech, Robotics, LegalTech, Data Science) "
+    "or emphasize the strong mathematical/scientific foundation of the topic, aligning with the School's philosophy. "
+    "Ensure your responses are concise and structured using Markdown for excellent readability. "
+    "--- USER QUESTION --- "
+)
+
+# --- 2. STREAMLIT UI SETUP (REMAINS CORRECT) ---
+st.set_page_config(
+    page_title="Bennett University AI Assistant",
+    layout="wide"
+)
+
+st.title("🦉 Bennett University School of AI — Gemini Assistant")
+st.caption("🚀 AI-powered expertise, aligned with BU's focus on research and interdisciplinary applications.")
+
+user_prompt = st.text_area( # Renamed 'prompt' to 'user_prompt' for clarity
+    "Ask a question about AI, ML, or how a topic connects to specializations like FinTech or Robotics:", 
+    height=150
+)
+
+# --- 3. API CALL LOGIC (FIX APPLIED HERE) ---
+if st.button("Ask Gemini"):
+    if not user_prompt:
+        st.warning("Please enter a question or topic first!")
+    else:
+        url = f"https://generativelanguage.googleapis.com/v1/models/{MODEL}:generateContent?key={API_KEY}"
+        
+        # **FINAL FIX: Prepend SYSTEM_INSTRUCTION to the user_prompt**
+        combined_prompt = SYSTEM_INSTRUCTION + user_prompt
+
+        # Construct the request body (payload) - Now simple and guaranteed to work
+        data = {
+            "contents": [{"parts": [{"text": combined_prompt}]}]
+        }
+        
+        headers = {"Content-Type": "application/json"}
+
+        with st.spinner("Gemini is thinking..."):
+            try:
+                res = requests.post(url, headers=headers, data=json.dumps(data))
+                
+                # Handle success (HTTP 200)
+                if res.status_code == 200:
+                    response_json = res.json()
+                    
+                    if response_json.get("candidates"):
+                        out = response_json["candidates"][0]["content"]["parts"][0]["text"]
+                        
+                        st.success("###  BU-SoAI AI assistant says:")
+                        st.markdown(out)
+                    else:
+                        st.warning("Gemini provided no response candidate. Try asking a different question.")
+                
+                # Handle API errors 
+                else:
+                    error_details = res.json().get("error", {})
+                    error_message = error_details.get("message", "Unknown API error.")
+                    status_code = res.status_code
+                    
+                    st.error(f"Error {status_code}: {error_message}")
+                    st.exception(f"Full response details: {res.text}")
+
+            except requests.exceptions.RequestException as e:
+                st.error(f"Network Error: Could not connect to the API. Details: {e}")
