@@ -1,8 +1,9 @@
 import streamlit as st
 import requests
 import json
+import os
 
-API_KEY = "YOUR_GEMINI_API_KEY"   # <-- paste your key here
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 MODEL = "gemini-1.5-flash"
 
 st.set_page_config(page_title="Gemini Free API", layout="wide")

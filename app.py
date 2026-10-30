@@ -5,11 +5,11 @@ import os
 import time
 
 
-API_KEY = "AIzaXXXXXXXXXXXXXXXXXXXXXXX" 
+API_KEY = os.environ.get("GEMINI_API_KEY", "") 
 
 # Check if the key is empty.
 if not API_KEY:
-    st.error("**API Key is missing.** Please insert your valid key directly into the app.py script.")
+    st.error("**API Key is missing.** Set the GEMINI_API_KEY environment variable before starting the app.")
     st.stop()
 
 # Configuration
